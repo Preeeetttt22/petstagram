@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">Petstagram</string>
     <string name="paw_icon">Paw print icon</string>
+    <string name="splash_background">Splash screen background</string>
+    <string name="app_logo">Petstagram Logo</string>
+    <string name="open">Open Navigation Drawer</string>
+    <string name="close">Close Navigation Drawer</string>
 </resources>

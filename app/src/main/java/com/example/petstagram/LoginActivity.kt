@@ -1,89 +1,86 @@
-package com.example.petstagram // <-- Make sure this matches your project's package name
+package com.example.petstagram
 
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Patterns
+import android.view.View
+import android.widget.TextView
 import android.widget.Toast
-import com.example.petstagram.databinding.ActivityLoginBinding // <-- This is auto-generated from your XML file name
+import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.textfield.TextInputEditText
+import com.google.firebase.auth.FirebaseAuth
 
 class LoginActivity : AppCompatActivity() {
 
-    // Declare the binding variable for your layout
-    private lateinit var binding: ActivityLoginBinding
+    private lateinit var auth: FirebaseAuth
+    private lateinit var emailEditText: TextInputEditText
+    private lateinit var passwordEditText: TextInputEditText
+    private lateinit var signInButton: MaterialButton
+    private lateinit var forgotPasswordText: TextView
+    private lateinit var signUpText: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_login) // Change this to your actual XML filename if different
 
-        // Inflate the layout using View Binding and set it as the content view
-        binding = ActivityLoginBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        auth = FirebaseAuth.getInstance()
 
-        // Set up the click listeners for the button and text views
-        setupClickListeners()
-    }
+        emailEditText = findViewById(R.id.inputEmail)
+        passwordEditText = findViewById(R.id.inputPassword)
+        signInButton = findViewById(R.id.buttonSignIn)
+        forgotPasswordText = findViewById(R.id.textForgotPassword)
+        signUpText = findViewById(R.id.textSignUp)
 
-    private fun setupClickListeners() {
-        // 1. Sign In Button Click Listener
-        binding.buttonSignIn.setOnClickListener {
-            handleSignIn()
+        signInButton.setOnClickListener { signInUser() }
+
+        forgotPasswordText.setOnClickListener {
+            // Navigate to Forgot Password screen (if implemented)
+            Toast.makeText(this, "Forgot Password Clicked", Toast.LENGTH_SHORT).show()
         }
 
-        // 2. Forgot Password Text Click Listener
-        binding.textForgotPassword.setOnClickListener {
-            // In a real app, you would navigate to a ForgotPasswordActivity
-            Toast.makeText(this, "Forgot Password clicked!", Toast.LENGTH_SHORT).show()
-        }
-
-        // 3. Sign Up Text Click Listener
-        binding.textSignUp.setOnClickListener {
-            // In a real app, you would navigate to a SignUpActivity
-            // Example:
-            // val intent = Intent(this, SignUpActivity::class.java)
-            // startActivity(intent)
-            Toast.makeText(this, "Sign Up clicked!", Toast.LENGTH_SHORT).show()
+        signUpText.setOnClickListener {
+            // Navigate to SignUpActivity
+            startActivity(Intent(this, SignUpActivity::class.java))
+            finish()
         }
     }
 
-    private fun handleSignIn() {
-        // To get text from a TextInputLayout, you access its inner 'editText' property.
-        // The '?.' is a safe call in case the editText is null.
-        val emailOrUsername = binding.editTextEmail.editText?.text.toString().trim()
-        val password = binding.editTextPassword.editText?.text.toString().trim()
+    private fun signInUser() {
+        val email = emailEditText.text.toString().trim()
+        val password = passwordEditText.text.toString().trim()
 
-        // --- VALIDATION ---
-        // Clear any previous errors
-        binding.editTextEmail.error = null
-        binding.editTextPassword.error = null
+        if (!isValidInput(email, password)) return
 
-        if (emailOrUsername.isEmpty()) {
-            // Set an error on the TextInputLayout, which is a better UX
-            binding.editTextEmail.error = "Email/Username is required"
-            return // Stop the function
+        signInButton.isEnabled = false
+
+        auth.signInWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val user = auth.currentUser
+                    if (user != null && user.isEmailVerified) {
+                        Toast.makeText(this, "Login Successful", Toast.LENGTH_SHORT).show()
+                        startActivity(Intent(this, DashboardActivity::class.java))
+                        finish()
+                    } else {
+                        Toast.makeText(this, "Please verify your email before logging in.", Toast.LENGTH_LONG).show()
+                        auth.signOut() // Sign out unverified users
+                    }
+                } else {
+                    Toast.makeText(this, "Authentication failed: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+    }
+
+    private fun isValidInput(email: String, password: String): Boolean {
+        if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            emailEditText.error = "Please enter a valid email"
+            return false
         }
-
-        if (password.isEmpty()) {
-            binding.editTextPassword.error = "Password is required"
-            return // Stop the function
+        if (password.isEmpty() || password.length < 6) {
+            passwordEditText.error = "Password must be at least 6 characters"
+            return false
         }
-
-        // --- AUTHENTICATION ---
-        // This is the section where you can edit the correct username and password.
-        // In a real app, you'd check this against a database or an API.
-        val correctUsername = "admin"
-        val correctPassword = "password123"
-
-        if (emailOrUsername == correctUsername && password == correctPassword) {
-            // Login Successful
-            Toast.makeText(this, "Sign In Successful!", Toast.LENGTH_SHORT).show()
-
-            // After successful login, you would typically navigate to the main part of your app.
-            // For example:
-            // val intent = Intent(this, MainActivity::class.java)
-            // startActivity(intent)
-            // finish() // Close the LoginActivity so the user can't press 'back' to return to it.
-        } else {
-            // Login Failed
-            Toast.makeText(this, "Invalid credentials. Please try again.", Toast.LENGTH_LONG).show()
-        }
+        return true
     }
 }

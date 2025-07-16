@@ -5,23 +5,26 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
-
+import com.google.firebase.auth.FirebaseAuth
 
 class SplashActivity : AppCompatActivity() {
 
-    // Set delay duration (in milliseconds)
-    private val splashDelay: Long = 3000 // 3 seconds
+    private val splashDelay: Long = 2000 // 2 seconds
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
 
-        // Handler to delay navigation to MainActivity
         Handler(Looper.getMainLooper()).postDelayed({
-            // Navigate to MainActivity or LoginActivity
-            val intent = Intent(this, LandingActivity::class.java)
-            startActivity(intent)
-            finish() // Finish SplashActivity so user can’t come back to it
+            val user = FirebaseAuth.getInstance().currentUser
+            if (user != null && user.isEmailVerified) {
+                // User is logged in and email verified
+                startActivity(Intent(this, DashboardActivity::class.java))
+            } else {
+                // First time or logged out
+                startActivity(Intent(this, LoginActivity::class.java))
+            }
+            finish()
         }, splashDelay)
     }
 }
